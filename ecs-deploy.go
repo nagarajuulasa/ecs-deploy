@@ -86,14 +86,51 @@ func listTaskDefs  (c *cli.Context) {
 
 		if err != nil {
 			fmt.Println(err.Error())
-			break
+			return
 		}
 
 		families = append(families, resp.Families...)
 	}
 
+	// ...and now for the pretty printing
 	for i := 0; i < len(families); i++{
 		fmt.Println(*families[i])
+
+		resp, err := ECS.ListTaskDefinitions(&ecs.ListTaskDefinitionsInput{
+				FamilyPrefix: families[i],
+				Sort: aws.String("DESC"),
+			})
+
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		var taskdefs []*string
+		taskdefs = append(taskdefs, resp.TaskDefinitionArns...)
+
+		for resp.NextToken != nil {
+			
+			resp, err = ECS.ListTaskDefinitions(&ecs.ListTaskDefinitionsInput{
+					FamilyPrefix: families[i],
+					Sort: aws.String("DESC"),
+					NextToken: resp.NextToken,
+				})
+
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+
+			taskdefs = append(taskdefs, resp.TaskDefinitionArns...)
+		}
+
+		// Whew, we now this family's list of task definitions
+		// ...pretty-print time!
+
+		for j := 0; j < len(taskdefs); j++ {
+			fmt.Printf("  %v\n", *taskdefs[j])
+		}
 	}
 }
 
