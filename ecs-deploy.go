@@ -53,26 +53,48 @@ func listServices (c *cli.Context) {
 
 func listTaskDefs  (c *cli.Context) {
 	checkAndConfigureAWS (c)
+	ECS := ecs.New(nil)
 
-	svc := ecs.New(nil)
+	// Hard Coded Value
+	var maxres int64 = 10
 
-params := &ecs.ListTaskDefinitionsInput{
-    Sort:         aws.String("DESC"),
-    Status:       aws.String("ACTIVE"),
-}
-resp, err := svc.ListTaskDefinitions(params)
+	input := ecs.ListTaskDefinitionFamiliesInput{
+		MaxResults: &maxres,
+	}
 
-if err != nil {
-    // Print the error, cast err to awserr.Error to get the Code and
-    // Message from an error.
-    fmt.Println(err.Error())
-    return
-}
+	resp, err := ECS.ListTaskDefinitionFamilies(&input)
 
-// Pretty-print the response data.
-fmt.Println(resp)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
 
+	var families []*string
 
+	families = append(families, resp.Families...)
+
+	// The aws library only returns up to MaxResults task definitions per call, and so
+	// must be iterated to ensure that all families are obtained.
+
+	for resp.NextToken != nil {
+		input = ecs.ListTaskDefinitionFamiliesInput{
+			MaxResults: &maxres,
+			NextToken: resp.NextToken,
+		}
+		
+		resp, err = ECS.ListTaskDefinitionFamilies(&input)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			break
+		}
+
+		families = append(families, resp.Families...)
+	}
+
+	for i := 0; i < len(families); i++{
+		fmt.Println(*families[i])
+	}
 }
 
 func main() {
