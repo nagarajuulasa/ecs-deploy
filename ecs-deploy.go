@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/defaults"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
@@ -27,6 +28,22 @@ func checkAndConfigureAWS (c *cli.Context) {
 		defaults.DefaultConfig.Region = aws.String(os.Getenv("AWS_REGION"))
 	} else {
 		defaults.DefaultConfig.Region = aws.String("us-east-1")
+	}
+
+	// The aws go library automatically looks for credentials in various places,
+	// including the ENV variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.
+	//
+	// We just need to override this behavior if the user explictly passes credentials
+
+	if c.GlobalString("aws-access-key") != "" && c.GlobalString("aws-secret-key") != "" {
+		provider := credentials.StaticProvider{
+			Value: credentials.Value{
+				AccessKeyID: c.GlobalString("aws-access-key"),
+				SecretAccessKey: c.GlobalString("aws-secret-key"),
+			},
+		}
+
+		defaults.DefaultConfig.Credentials = credentials.NewCredentials(&provider)
 	}
 }
 
