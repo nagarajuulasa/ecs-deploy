@@ -47,6 +47,13 @@ func checkAndConfigureAWS (c *cli.Context) {
 	}
 }
 
+func deploy (c *cli.Context) {
+	checkAndConfigureAWS (c)
+	//ECS := ecs.New(nil)
+
+	fmt.Println("Deployment is work in progress...")
+}
+
 func listServices (c *cli.Context) {
 	fmt.Println(c.String("timeout"))
 }
@@ -139,20 +146,49 @@ func main() {
 	app.Name = "ecs-deploy"
 	app.Usage = "Blue-Green deployments against AWS ECS"
 	app.Version = "0.0.0"
-	app.Action = listTaskDefs
+	app.Action = deploy
 
 	app.Commands = []cli.Command {
-		cli.Command{
+		{
 			Name: "services",
 			ShortName: "s",
 			Usage: "List ECS Service defined for this region and cluster",
 			Action: listServices,
 		},
-		cli.Command{
+		{
 			Name: "taskdefs",
 			ShortName: "t",
 			Usage: "List ECS Task Definitions defined for this region",
 			Action: listTaskDefs,
+		},
+		{
+			Name: "deploy",
+			ShortName: "d",
+			Usage: "Initiate an Blue/Green AWS deployment",
+			Action: deploy,
+			Flags: []cli.Flag {
+				cli.StringFlag{
+					Name: "n, service-name",
+					Usage: "Name of service to deploy",
+					EnvVar: "AWS_ECS_SERVICE",
+				},
+				cli.StringFlag{
+					Name: "i, image",
+					Usage: "Name of Docker image to run, ex: mariadb:latest",
+					EnvVar: "DEPLOY_IMAGE",
+				},
+				cli.IntFlag{
+					Name: "t, timeout",
+					Value: 90,
+					Usage: "Maximum number of seconds to wait until considering the task definition as failed to start",
+					EnvVar: "DEPLOY_TIMEOUT",
+				},
+				cli.StringFlag{
+					Name: "e, tag-env-var",
+					Usage: "Get image tag name from environment variable. If provided this will override value specified in image name argument.",
+					EnvVar: "TAG_ENV_VAR",
+				},
+			},
 		},
 	}
 
@@ -183,27 +219,6 @@ func main() {
 			Name: "c, cluster",
 			Usage: "Name of ECS cluster",
 			EnvVar: "AWS_ECS_CLUSTER",
-		},
-		cli.StringFlag{
-			Name: "n, service-name",
-			Usage: "Name of service to deploy",
-			EnvVar: "AWS_ECS_SERVICE",
-		},
-		cli.StringFlag{
-			Name: "i, image",
-			Usage: "Name of Docker image to run, ex: mariadb:latest",
-			EnvVar: "DEPLOY_IMAGE",
-		},
-		cli.IntFlag{
-			Name: "t, timeout",
-			Value: 90,
-			Usage: "Maximum number of seconds to wait until the new task definition is running",
-			EnvVar: "DEPLOY_TIMEOUT",
-		},
-		cli.StringFlag{
-			Name: "e, tag-env-var",
-			Usage: "Get image tag name from environment variable. If provided this will override value specified in image name argument.",
-			EnvVar: "TAG_ENV_VAR",
 		},
 		cli.BoolFlag{
 			Name: "V, verbose",
