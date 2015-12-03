@@ -96,7 +96,42 @@ func deploy (c *cli.Context) {
 }
 
 func listServices (c *cli.Context) {
-	fmt.Println(c.String("timeout"))
+	checkAndConfigureAWS (c)
+	ECS := ecs.New (nil)
+
+	cluster := c.Args().First()
+
+	// Hard Coded Value
+	var maxres int64 = 10
+
+	var arns []*string
+	var nt *string
+
+	for true {
+		resp, err := ECS.ListServices (&ecs.ListServicesInput {
+			Cluster:    aws.String(cluster),
+			MaxResults: aws.Int64(maxres),
+			NextToken:  nt,
+		})
+
+		if err != nil {
+			fmt.Println(err.Error())
+			fmt.Println("Printing partial list:")
+			break
+		}
+
+		arns = append(arns, resp.ServiceArns...)
+
+		if resp.NextToken == nil {
+			break
+		} else {
+			nt = resp.NextToken
+		}
+	}
+
+	for _, arn := range arns {
+		fmt.Println(*arn)
+	}
 }
 
 func listTaskDefs  (c *cli.Context) {
@@ -194,6 +229,8 @@ func main() {
 			Name: "services",
 			ShortName: "s",
 			Usage: "List ECS Service defined for this region and cluster",
+			Description: "If no cluster is specified, the default cluster will be used",
+			ArgsUsage: "[cluster]",
 			Action: listServices,
 		},
 		{
@@ -205,9 +242,14 @@ func main() {
 		{
 			Name: "deploy",
 			ShortName: "d",
-			Usage: "Initiate an Blue/Green AWS deployment",
+			Usage: "Initiate a Blue/Green AWS deployment",
 			Action: deploy,
 			Flags: []cli.Flag {
+				cli.StringFlag{
+					Name: "c, cluster",
+					Usage: "Name of ECS cluster",
+					EnvVar: "AWS_ECS_CLUSTER",
+				},
 				cli.StringFlag{
 					Name: "n, service-name",
 					Usage: "Name of service to deploy",
@@ -250,16 +292,11 @@ func main() {
 		},
 		cli.StringFlag{
 			Name: "r, region",
-			Usage: "AWS Region Name. Defaults to \"us-east-1\"",
+			Usage: "AWS Region Name. Defaults to \"us-east-1\" [$AWS_REGION]",
 
 			// Not used. Extra logic needed for backward compatibility
 			//  See above: checkAndConfigureAWS
 			//EnvVar: "AWS_DEFAULT_REGION",
-		},
-		cli.StringFlag{
-			Name: "c, cluster",
-			Usage: "Name of ECS cluster",
-			EnvVar: "AWS_ECS_CLUSTER",
 		},
 		cli.BoolFlag{
 			Name: "V, verbose",
