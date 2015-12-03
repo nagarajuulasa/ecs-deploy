@@ -48,6 +48,20 @@ func checkAndConfigureAWS (c *cli.Context) {
 }
 
 func deploy (c *cli.Context) {
+	service := c.String("service-name")
+	if service == "" {
+		fmt.Printf("Service not specified\n\n")
+		cli.ShowCommandHelp (c, "deploy")
+		return
+	}
+
+	image   := c.String("image")
+	if image == "" {
+		fmt.Printf("Image not specified\n\n")
+		cli.ShowCommandHelp (c, "deploy")
+		return
+	}
+
 	checkAndConfigureAWS (c)
 	//ECS := ecs.New(nil)
 
