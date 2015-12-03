@@ -62,8 +62,35 @@ func deploy (c *cli.Context) {
 		return
 	}
 
+	// This may be the empty string; AWS will just use the 'default' cluster
+	cluster := c.String("cluster")
+
 	checkAndConfigureAWS (c)
-	//ECS := ecs.New(nil)
+	ECS := ecs.New(nil)
+
+	// describe the specified service so as to find its underlying task definition
+	output, err := ECS.DescribeServices (&ecs.DescribeServicesInput {
+		Services: []*string {
+			aws.String(service),
+		},
+		Cluster: aws.String(cluster),
+	})
+
+	if err != nil {
+		fmt.Println(err.Error());
+		return
+	}
+
+	if len(output.Failures) == 1 {
+		fmt.Printf("Error fetching description of service `%s': %s\n",
+			service,
+			*output.Failures[0].Reason)
+		return
+	}
+
+	awsService := *(output.Services[0])
+
+	fmt.Println(*awsService.TaskDefinition)
 
 	fmt.Println("Deployment is work in progress...")
 }
