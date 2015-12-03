@@ -83,7 +83,7 @@ func deploy (c *cli.Context) {
 
 	if len(output.Failures) == 1 {
 		fmt.Printf("Error fetching description of service `%s': %s\n",
-			service,
+			*output.Failures[0].Arn,
 			*output.Failures[0].Reason)
 		return
 	}
