@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # Setup default values for variables
 VERSION="3.7.0"
 CLUSTER=false
